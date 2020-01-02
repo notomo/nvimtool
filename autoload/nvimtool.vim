@@ -9,7 +9,7 @@ function! nvimtool#run(file_name, ...) abort
     endif
 
     " TODO: if not debug mode, use require('nvimtool/{a:file_name}')
-    let method = a:000[0]
-    let cmd = printf("lua dofile('%s/%s.lua').%s()", s:path, a:file_name, method)
+    let method_name = a:000[0]
+    let cmd = printf("lua dofile('%s/%s.lua').%s()", s:path, a:file_name, method_name)
     execute cmd
 endfunction

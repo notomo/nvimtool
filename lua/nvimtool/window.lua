@@ -1,4 +1,4 @@
--- floatin window debug
+-- floating window debug
 
 local window = {}
 
