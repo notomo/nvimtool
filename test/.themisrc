@@ -34,13 +34,13 @@ function! s:assert() abort
 
     function! assert.window_row(expected) abort
         let actual = nvim_win_get_config(0).row
-        let message = printf('row must be %s, but actual: %s', a:expected, actual)
+        let message = printf('window row must be %s, but actual: %s', a:expected, actual)
         call self.equals(actual, a:expected, message)
     endfunction
 
     function! assert.window_col(expected) abort
         let actual = nvim_win_get_config(0).col
-        let message = printf('col must be %s, but actual: %s', a:expected, actual)
+        let message = printf('window col must be %s, but actual: %s', a:expected, actual)
         call self.equals(actual, a:expected, message)
     endfunction
 
