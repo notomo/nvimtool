@@ -1,7 +1,7 @@
 
-let s:helper = NvimToolTestHelper()
+let s:helper = TestHelper()
 let s:suite = s:helper.suite('window')
-let s:assert = s:helper.assert()
+let s:assert = s:helper.assert
 
 function! s:suite.open()
     NvimTool window open
