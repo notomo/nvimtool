@@ -34,28 +34,25 @@ local function pp(sexpr)
     return result
 end
 
-local function split(str, sep)
-  if sep == nil then
-      return {}
-  end
+local FILE_TYPE = "nvimtool-tree"
 
-  local t = {}
-  local i = 1
-  for s in string.gmatch(str, "([^" .. sep .. "]+)") do
-    t[i] = s
-    i = i + 1
-  end
-
-  return t
+local function close_windows()
+    local ids = vim.api.nvim_tabpage_list_wins(0)
+    for _, id in ipairs(ids) do
+        local buf = vim.api.nvim_win_get_buf(id)
+        local filetype = vim.api.nvim_buf_get_option(buf, "filetype")
+        if filetype == FILE_TYPE then
+            vim.api.nvim_win_close(id, true)
+        end
+    end
 end
 
-function module.root()
-    local filetype = vim.api.nvim_buf_get_option(0, "filetype")
-    local parser = vim.treesitter.get_parser(0, filetype)
-    local tree = parser:parse()
-    local node = tree:root()
+local function open_window(sexpr)
+    close_windows()
 
     local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_option(bufnr, "filetype", FILE_TYPE)
+    vim.api.nvim_buf_set_option(bufnr, "bufhidden", "wipe")
     local config = {
         width=80,
         height=vim.api.nvim_get_option("lines") / 2,
@@ -66,10 +63,42 @@ function module.root()
         anchor="NE",
         style='minimal',
     }
-    vim.api.nvim_open_win(bufnr, false, config)
 
-    local lines = split(pp(node:sexpr()), "\n")
+    vim.api.nvim_open_win(bufnr, false, config)
+    local lines = vim.split(pp(sexpr), "\n", false)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+end
+
+local function get_tree()
+    local filetype = vim.api.nvim_buf_get_option(0, "filetype")
+    local parser = vim.treesitter.get_parser(0, filetype)
+    return parser:parse()
+end
+
+function module.root()
+    local tree = get_tree()
+    local node = tree:root()
+    open_window(node:sexpr())
+end
+
+function module.child()
+    local tree = get_tree()
+    local root = tree:root()
+    local row, column = unpack(vim.api.nvim_win_get_cursor(0))
+    local count = root:child_count()
+    local sexpr = ""
+    for i = 0, count - 1 do
+        local sr, sc, er, ec = unpack({root:child(i):range()})
+        if sr <= row and row <= er and sc <= column and column <= ec then
+            sexpr = root:child(i):sexpr()
+            break
+        end
+    end
+    if sexpr == "" then
+        return
+    end
+
+    open_window(sexpr)
 end
 
 return module
