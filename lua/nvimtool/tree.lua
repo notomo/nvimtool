@@ -73,6 +73,7 @@ local function open_window(sexpr)
     vim.api.nvim_open_win(bufnr, false, config)
     local lines = vim.split(pp(sexpr), "\n", false)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 end
 
 local function get_tree()
