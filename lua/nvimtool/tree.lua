@@ -20,13 +20,19 @@ local function pp(sexpr)
     local indent = ''
     while next ~= nil do
         local sub = sexpr:sub(start, next - 1)
+        local name_pos = sub:find("%S+:")
+        local name = ""
+        if name_pos ~= nil then
+           name = sub:sub(name_pos)
+           sub = sub:sub(0, name_pos - 1)
+        end
         local count = count_pattern(sub, "%)")
         if count == 0 then
             indent = indent .. '  '
         else
             indent = indent:sub(0, - count * 2 + 1)
         end
-        result = result .. sub .. "\n" .. indent .. "("
+        result = result .. sub .. "\n" .. indent .. name .. "("
         start = next + 1
         next = sexpr:find("%(", start)
     end
