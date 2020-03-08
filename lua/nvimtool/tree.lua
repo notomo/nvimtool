@@ -76,9 +76,14 @@ local function open_window(sexpr)
     vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
 end
 
+local parser_names = { vim="vimscript" }
 local function get_tree()
     local filetype = vim.api.nvim_buf_get_option(0, "filetype")
-    local parser = vim.treesitter.get_parser(0, filetype)
+    local name = parser_names[filetype]
+    if name == nil then
+        name = filetype
+    end
+    local parser = vim.treesitter.get_parser(0, name)
     return parser:parse()
 end
 
