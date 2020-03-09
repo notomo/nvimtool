@@ -40,14 +40,15 @@ local function pp(sexpr)
     return result
 end
 
-local FILE_TYPE = "nvimtool-tree"
+local TREE_FILE_TYPE = "nvimtool-tree"
+local QUERY_FILE_TYPE = "nvimtool-tree-query"
 
 local function close_windows()
     local ids = vim.api.nvim_tabpage_list_wins(0)
     for _, id in ipairs(ids) do
         local buf = vim.api.nvim_win_get_buf(id)
         local filetype = vim.api.nvim_buf_get_option(buf, "filetype")
-        if filetype == FILE_TYPE then
+        if filetype == TREE_FILE_TYPE then
             vim.api.nvim_win_close(id, true)
         end
     end
@@ -57,7 +58,7 @@ local function open_window(sexpr)
     close_windows()
 
     local bufnr = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(bufnr, "filetype", FILE_TYPE)
+    vim.api.nvim_buf_set_option(bufnr, "filetype", TREE_FILE_TYPE)
     vim.api.nvim_buf_set_option(bufnr, "bufhidden", "wipe")
     local config = {
         width=80,
@@ -77,24 +78,28 @@ local function open_window(sexpr)
 end
 
 local parser_names = { vim="vimscript" }
-local function get_tree()
-    local filetype = vim.api.nvim_buf_get_option(0, "filetype")
+local function get_lang(bufnr)
+    local filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
     local name = parser_names[filetype]
     if name == nil then
-        name = filetype
+        return filetype
     end
-    local parser = vim.treesitter.get_parser(0, name)
+    return name
+end
+
+local function get_tree(bufnr)
+    local parser = vim.treesitter.get_parser(bufnr, get_lang(bufnr))
     return parser:parse()
 end
 
 function module.root()
-    local tree = get_tree()
+    local tree = get_tree(0)
     local node = tree:root()
     open_window(node:sexpr())
 end
 
 function module.child()
-    local tree = get_tree()
+    local tree = get_tree(0)
     local root = tree:root()
     local row, column = unpack(vim.api.nvim_win_get_cursor(0))
     local count = root:child_count()
@@ -111,6 +116,59 @@ function module.child()
     end
 
     open_window(sexpr)
+end
+
+function module.query()
+    local tree = get_tree(0)
+    local node = tree:root()
+    local lines = vim.split(pp(node:sexpr()), "\n", false)
+
+    local target_bufnr = vim.api.nvim_get_current_buf()
+    local buf_name = vim.api.nvim_buf_get_name(target_bufnr)
+
+    vim.api.nvim_command("vsplit")
+    vim.api.nvim_command("wincmd w")
+
+    local tree_bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_command("buffer " .. tree_bufnr)
+    vim.api.nvim_buf_set_option(tree_bufnr, "filetype", TREE_FILE_TYPE)
+    vim.api.nvim_buf_set_option(tree_bufnr, "bufhidden", "wipe")
+    vim.api.nvim_buf_set_lines(tree_bufnr, 0, -1, false, lines)
+
+    vim.api.nvim_command("split")
+    vim.api.nvim_command("wincmd w")
+
+    local query_bufnr = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_command("buffer " .. query_bufnr)
+    vim.api.nvim_buf_set_option(query_bufnr, "filetype", QUERY_FILE_TYPE)
+    vim.api.nvim_buf_set_option(query_bufnr, "bufhidden", "wipe")
+    vim.api.nvim_buf_set_option(query_bufnr, "buftype", "acwrite")
+    vim.api.nvim_buf_set_name(query_bufnr, "nvimtool_query://" .. buf_name)
+
+    local autocmd = string.format("autocmd BufWriteCmd <buffer=%s> NvimTool tree save_query %s %s", query_bufnr, target_bufnr, query_bufnr)
+    vim.api.nvim_command(autocmd)
+end
+
+function module.save_query(target_bufnr, query_bufnr)
+    vim.api.nvim_buf_set_option(query_bufnr, "modified", false)
+    local query = table.concat(vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false), "")
+    tsquery = vim.treesitter.parse_query(get_lang(target_bufnr), query)
+
+    local ns = vim.api.nvim_create_namespace("nvimtool-tree-query")
+    vim.api.nvim_buf_clear_namespace(target_bufnr, ns, 0, -1)
+    for _, node in tsquery:iter_captures(get_tree(target_bufnr):root(), target_bufnr, 0, -1) do
+        local sr, sc, er, ec = unpack({node:range()})
+        for row = sr, er  do
+            local start_col = 0
+            local end_col = -1
+            if row == sr then
+                start_col = sc
+            elseif row == er then
+                end_col = ec
+            end
+            vim.api.nvim_buf_add_highlight(target_bufnr, ns, "TODO", row, start_col, end_col)
+        end
+    end
 end
 
 return module
