@@ -1,5 +1,6 @@
 
 local module = {}
+local ns = vim.api.nvim_create_namespace("nvimtool-tree-query")
 
 local function count_pattern(haystack, needle)
     local start = 0
@@ -119,6 +120,8 @@ function module.child()
 end
 
 function module.query()
+    vim.api.nvim_command("only")
+
     local tree = get_tree(0)
     local node = tree:root()
     local lines = vim.split(pp(node:sexpr()), "\n", false)
@@ -145,8 +148,11 @@ function module.query()
     vim.api.nvim_buf_set_option(query_bufnr, "buftype", "acwrite")
     vim.api.nvim_buf_set_name(query_bufnr, "nvimtool_query://" .. buf_name)
 
-    local autocmd = string.format("autocmd BufWriteCmd <buffer=%s> NvimTool tree save_query %s %s", query_bufnr, target_bufnr, query_bufnr)
-    vim.api.nvim_command(autocmd)
+    local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> NvimTool tree save_query %s %s", query_bufnr, target_bufnr, query_bufnr)
+    vim.api.nvim_command(write_autocmd)
+
+    local wipeout_autocmd = string.format("autocmd BufWipeout <buffer=%s> NvimTool tree reset_query %s", query_bufnr, target_bufnr)
+    vim.api.nvim_command(wipeout_autocmd)
 end
 
 function module.save_query(target_bufnr, query_bufnr)
@@ -154,7 +160,6 @@ function module.save_query(target_bufnr, query_bufnr)
     local query = table.concat(vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false), "")
     tsquery = vim.treesitter.parse_query(get_lang(target_bufnr), query)
 
-    local ns = vim.api.nvim_create_namespace("nvimtool-tree-query")
     vim.api.nvim_buf_clear_namespace(target_bufnr, ns, 0, -1)
     for _, node in tsquery:iter_captures(get_tree(target_bufnr):root(), target_bufnr, 0, -1) do
         local sr, sc, er, ec = unpack({node:range()})
@@ -169,6 +174,10 @@ function module.save_query(target_bufnr, query_bufnr)
             vim.api.nvim_buf_add_highlight(target_bufnr, ns, "TODO", row, start_col, end_col)
         end
     end
+end
+
+function module.reset_query(target_bufnr)
+    vim.api.nvim_buf_clear_namespace(target_bufnr, ns, 0, -1)
 end
 
 return module
