@@ -143,6 +143,9 @@ function module.query()
 
     local query_bufnr = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_command("buffer " .. query_bufnr)
+    local default_content = '((comment) @var (match? @var "test"))'
+    vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, {default_content})
+    vim.api.nvim_buf_set_option(query_bufnr, "modified", false)
     vim.api.nvim_buf_set_option(query_bufnr, "filetype", QUERY_FILE_TYPE)
     vim.api.nvim_buf_set_option(query_bufnr, "bufhidden", "wipe")
     vim.api.nvim_buf_set_option(query_bufnr, "buftype", "acwrite")
@@ -171,7 +174,7 @@ function module.save_query(target_bufnr, query_bufnr)
             elseif row == er then
                 end_col = ec
             end
-            vim.api.nvim_buf_add_highlight(target_bufnr, ns, "TODO", row, start_col, end_col)
+            vim.api.nvim_buf_add_highlight(target_bufnr, ns, "NvimToolTreeQueryMatched", row, start_col, end_col)
         end
     end
 end

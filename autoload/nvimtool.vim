@@ -13,3 +13,5 @@ function! nvimtool#run(file_name, ...) abort
     let cmd = printf("lua dofile('%s/%s.lua').%s(%s)", s:path, a:file_name, method_name, join(a:000[1:], ', '))
     execute cmd
 endfunction
+
+highlight default link NvimToolTreeQueryMatched Todo
