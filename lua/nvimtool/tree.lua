@@ -171,7 +171,8 @@ function module.save_query(target_bufnr, query_bufnr)
             local end_col = -1
             if row == sr then
                 start_col = sc
-            elseif row == er then
+            end
+            if row == er then
                 end_col = ec
             end
             vim.api.nvim_buf_add_highlight(target_bufnr, ns, "NvimToolTreeQueryMatched", row, start_col, end_col)
