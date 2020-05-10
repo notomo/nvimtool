@@ -1,6 +1,6 @@
 -- floating window debug
 
-local window = {}
+local module = {}
 
 local function dump(bufnr, config)
   local lines = {}
@@ -10,8 +10,27 @@ local function dump(bufnr, config)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 end
 
-function window.open()
+local WINDOW_FILE_TYPE = "nvimtool-window"
+
+local function update(id, row, col)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+  if not filetype == WINDOW_FILE_TYPE then
+    return
+  end
+
+  vim.api.nvim_win_set_config(id, {
+    relative='editor',
+    row=row,
+    col=col,
+  })
+  dump(bufnr, vim.api.nvim_win_get_config(id))
+end
+
+function module.open()
   local bufnr = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(bufnr, "filetype", WINDOW_FILE_TYPE)
+
   local config = {
     width=24,
     height=16,
@@ -21,7 +40,8 @@ function window.open()
     external=false,
     style='minimal',
   }
-  vim.api.nvim_open_win(bufnr, true, config)
+  local id = vim.api.nvim_open_win(bufnr, true, config)
+
   dump(bufnr, vim.api.nvim_win_get_config(id))
 
   vim.api.nvim_buf_set_keymap(bufnr, 'n', 'h', ":<C-u>NvimTool window left<CR>", { noremap=true })
@@ -30,64 +50,36 @@ function window.open()
   vim.api.nvim_buf_set_keymap(bufnr, 'n', 'l', ":<C-u>NvimTool window right<CR>", { noremap=true })
 end
 
-function window.left()
-  local id = vim.api.nvim_call_function('win_getid', {})
+function module.left()
+  local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false]
   local col = config.col[false] - 1
-  vim.api.nvim_win_set_config(id, {
-    relative='editor',
-    row=row,
-    col=col,
-  })
-  dump(bufnr, vim.api.nvim_win_get_config(id))
+  update(id, row, col)
 end
 
-function window.down()
-  local id = vim.api.nvim_call_function('win_getid', {})
+function module.down()
+  local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false] + 1
   local col = config.col[false]
-  vim.api.nvim_win_set_config(id, {
-    relative='editor',
-    row=row,
-    col=col,
-  })
-  dump(bufnr, vim.api.nvim_win_get_config(id))
+  update(id, row, col)
 end
 
-function window.up()
-  local id = vim.api.nvim_call_function('win_getid', {})
+function module.up()
+  local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false] - 1
   local col = config.col[false]
-  vim.api.nvim_win_set_config(id, {
-    relative='editor',
-    row=row,
-    col=col,
-  })
-  dump(bufnr, vim.api.nvim_win_get_config(id))
+  update(id, row, col)
 end
 
-function window.right()
-  local id = vim.api.nvim_call_function('win_getid', {})
+function module.right()
+  local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false]
   local col = config.col[false] + 1
-  vim.api.nvim_win_set_config(id, {
-    relative='editor',
-    row=row,
-    col=col,
-  })
-  dump(bufnr, vim.api.nvim_win_get_config(id))
+  update(id, row, col)
 end
-
-local module = {
-  open = window.open,
-  left = window.left,
-  down = window.down,
-  up = window.up,
-  right = window.right,
-}
 
 return module
