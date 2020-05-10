@@ -27,3 +27,14 @@ function! s:suite.move()
 
     call s:assert.window_count(2)
 endfunction
+
+function! s:suite.save()
+    NvimTool window open
+
+    let width = 40
+    call s:helper.search('width')
+    call s:helper.replace_line('width = ' . width . ',')
+    write
+
+    call s:assert.window_width(width)
+endfunction

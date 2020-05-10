@@ -32,6 +32,19 @@ function! TestHelper() abort
         return suite
     endfunction
 
+    function! helper.search(pattern) abort
+        let result = search(a:pattern)
+        if result == 0
+            let message = printf('%s not found', a:pattern)
+            call self.assert.fail(message)
+        endif
+        return result
+    endfunction
+
+    function! helper.replace_line(new_line) abort
+        call setline('.', a:new_line)
+    endfunction
+
     return helper
 endfunction
 
@@ -53,6 +66,12 @@ function! s:assert() abort
     function! assert.window_col(expected) abort
         let actual = nvim_win_get_config(0).col
         let message = printf('window col must be %s, but actual: %s', a:expected, actual)
+        call self.equals(actual, a:expected, message)
+    endfunction
+
+    function! assert.window_width(expected) abort
+        let actual = nvim_win_get_width(0)
+        let message = printf('window width must be %s, but actual: %s', a:expected, actual)
         call self.equals(actual, a:expected, message)
     endfunction
 
