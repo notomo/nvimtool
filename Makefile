@@ -1,4 +1,4 @@
 test:
-	THEMIS_VIM=nvim THEMIS_ARGS="-e --headless" themis
+	vusted ./test --shuffle -v
 
 .PHONY: test
