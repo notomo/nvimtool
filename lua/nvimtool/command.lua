@@ -18,15 +18,11 @@ M.main = function(...)
   local cmd_name = args[2]
   local cmd_args = table.concat(slice(args, 3), ",")
   local name = ("nvimtool/command/%s"):format(file_name)
-  for _, path in ipairs(vim.split(package.path, ";")) do
-    local p = path:gsub("?", name)
-    if vim.fn.filereadable(p) == 1 then
-      local cmd = dofile(p)
-      return cmd[cmd_name](cmd_args)
-    end
+  local ok, cmd = pcall(require, name)
+  if not ok then
+    return vim.api.nvim_err_write("not found command: args=" .. vim.inspect(args) .. "\n")
   end
-
-  return vim.api.nvim_err_write("not found command: args=" .. vim.inspect(args) .. "\n")
+  return cmd[cmd_name](cmd_args)
 end
 
 return M
