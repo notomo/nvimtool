@@ -1,13 +1,5 @@
 local M = {}
 
-local slice = function(tbl, first, last)
-  local result = {}
-  for i = first or 1, last or #tbl, 1 do
-    result[#result + 1] = tbl[i]
-  end
-  return result
-end
-
 M.main = function(...)
   local args = {...}
   if #args < 2 then
@@ -16,7 +8,7 @@ M.main = function(...)
 
   local file_name = args[1]
   local cmd_name = args[2]
-  local cmd_args = table.concat(slice(args, 3), ",")
+  local cmd_args = table.concat({unpack(args, 3)}, ",")
   local name = ("nvimtool/command/%s"):format(file_name)
   local ok, cmd = pcall(require, name)
   if not ok then
