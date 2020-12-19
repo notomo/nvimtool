@@ -33,33 +33,23 @@ M.replace_line = function(new_line)
   vim.fn.setline(".", new_line)
 end
 
-local assert = require("luassert")
-local AM = {}
+local vassert = require("vusted.assert")
+local asserts = vassert.asserts
 
-AM.window_count = function(expected)
-  local actual = vim.fn.tabpagewinnr(vim.fn.tabpagenr(), "$")
-  local msg = string.format("window count should be %s, but actual: %s", expected, actual)
-  assert.equals(expected, actual, msg)
-end
+asserts.create("window_count"):register_eq(function()
+  return vim.fn.tabpagewinnr(vim.fn.tabpagenr(), "$")
+end)
 
-AM.window_width = function(expected)
-  local actual = vim.api.nvim_win_get_width(0)
-  local msg = string.format("window width should be %s, but actual: %s", expected, actual)
-  assert.equals(expected, actual, msg)
-end
+asserts.create("window_width"):register_eq(function()
+  return vim.api.nvim_win_get_width(0)
+end)
 
-AM.window_row = function(expected)
-  local actual = vim.api.nvim_win_get_config(0).row[false]
-  local msg = string.format("window row should be %s, but actual: %s", expected, actual)
-  assert.equals(expected, actual, msg)
-end
+asserts.create("window_row"):register_eq(function()
+  return vim.api.nvim_win_get_config(0).row[false]
+end)
 
-AM.window_col = function(expected)
-  local actual = vim.api.nvim_win_get_config(0).col[false]
-  local msg = string.format("window col should be %s, but actual: %s", expected, actual)
-  assert.equals(expected, actual, msg)
-end
+asserts.create("window_col"):register_eq(function()
+  return vim.api.nvim_win_get_config(0).col[false]
+end)
 
-M.assert = AM
-
-return M
+package.loaded["test.helper"] = M
