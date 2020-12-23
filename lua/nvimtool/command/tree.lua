@@ -165,7 +165,7 @@ function module.save_query(target_bufnr, query_bufnr)
   local query = table.concat(vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false), "")
   local tsquery = vim.treesitter.parse_query(get_lang(target_bufnr), query)
 
-  tsquery:iter_captures(get_tree(target_bufnr):root(), target_bufnr, 0, -1)
+  vim.api.nvim_buf_clear_namespace(target_bufnr, ns, 0, -1)
   for _, node in tsquery:iter_captures(get_tree(target_bufnr):root(), target_bufnr, 0, -1) do
     local sr, sc, er, ec = unpack({node:range()})
     for row = sr, er do
