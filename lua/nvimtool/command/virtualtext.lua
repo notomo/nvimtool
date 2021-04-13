@@ -1,6 +1,6 @@
-local module = {}
+local M = {}
 
-function module.echo()
+function M.echo()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.fn.line(".") - 1
   local nss = vim.api.nvim_get_namespaces()
@@ -16,8 +16,7 @@ function module.echo()
       local details = result[4]
       for _, chunk in ipairs(details.virt_text or {}) do
         local text = chunk[1]
-        local cmd = string.format("echomsg \"%s\"", vim.fn.escape(text, "\"\\"))
-        vim.api.nvim_command(cmd)
+        vim.api.nvim_echo({{text}}, true, {})
       end
     end
 
@@ -25,7 +24,7 @@ function module.echo()
   end
 end
 
-function module.clear()
+function M.clear()
   local bufnr = vim.api.nvim_get_current_buf()
   local nss = vim.api.nvim_get_namespaces()
   for _, nsid in pairs(nss) do
@@ -33,7 +32,7 @@ function module.clear()
   end
 end
 
-function module.clear_one()
+function M.clear_one()
   local bufnr = vim.api.nvim_get_current_buf()
   local line = vim.fn.line(".") - 1
   local nss = vim.api.nvim_get_namespaces()
@@ -42,4 +41,4 @@ function module.clear_one()
   end
 end
 
-return module
+return M

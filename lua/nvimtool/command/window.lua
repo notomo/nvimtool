@@ -1,6 +1,4 @@
--- floating window debug
-
-local module = {}
+local M = {}
 
 local function dump(bufnr, config)
   local lines = {}
@@ -14,70 +12,74 @@ local WINDOW_FILE_TYPE = "nvimtool-window"
 
 local function update(id, row, col, relative)
   local bufnr = vim.api.nvim_get_current_buf()
-  local filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+  local filetype = vim.bo[bufnr].filetype
   if not filetype == WINDOW_FILE_TYPE then
     return
   end
 
-  vim.api.nvim_win_set_config(id, {
-    relative=relative,
-    row=row,
-    col=col,
-  })
+  vim.api.nvim_win_set_config(id, {relative = relative, row = row, col = col})
   dump(bufnr, vim.api.nvim_win_get_config(id))
-  vim.api.nvim_buf_set_option(bufnr, "modified", false)
+  vim.bo[bufnr].modified = false
 end
 
-function module.open()
+function M.open()
   local bufnr = vim.api.nvim_create_buf(false, true)
 
   local config = {
-    width=24,
-    height=16,
-    relative='editor',
-    row=0,
-    col=0,
-    external=false,
-    style='minimal',
+    width = 24,
+    height = 16,
+    relative = "editor",
+    row = 0,
+    col = 0,
+    external = false,
+    style = "minimal",
   }
   local id = vim.api.nvim_open_win(bufnr, true, config)
 
   dump(bufnr, vim.api.nvim_win_get_config(id))
 
-  vim.api.nvim_buf_set_option(bufnr, "filetype", WINDOW_FILE_TYPE)
-  vim.api.nvim_buf_set_option(bufnr, "modified", false)
-  vim.api.nvim_buf_set_option(bufnr, "bufhidden", "wipe")
-  vim.api.nvim_buf_set_option(bufnr, "buftype", "acwrite")
+  vim.bo[bufnr].filetype = WINDOW_FILE_TYPE
+  vim.bo[bufnr].modified = false
+  vim.bo[bufnr].bufhidden = "wipe"
+  vim.bo[bufnr].buftype = "acwrite"
   vim.api.nvim_buf_set_name(bufnr, "nvimtool_window://" .. bufnr)
 
-  local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> NvimTool window save %s", bufnr, bufnr)
-  vim.api.nvim_command(write_autocmd)
+  local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').window.save(%s)", bufnr, bufnr)
+  vim.cmd(write_autocmd)
 
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'H', ":<C-u>NvimTool window left<CR>", { noremap=true })
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'J', ":<C-u>NvimTool window down<CR>", { noremap=true })
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'K', ":<C-u>NvimTool window up<CR>", { noremap=true })
-  vim.api.nvim_buf_set_keymap(bufnr, 'n', 'L', ":<C-u>NvimTool window right<CR>", { noremap=true })
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "H", "<Cmd>lua require('nvimtool').window.left<CR>", {
+    noremap = true,
+  })
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "J", "<Cmd>lua require('nvimtool').window.down<CR>", {
+    noremap = true,
+  })
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "K", "<Cmd>lua require('nvimtool').window.up<CR>", {
+    noremap = true,
+  })
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "L", "<Cmd>lua require('nvimtool').window.right<CR>", {
+    noremap = true,
+  })
 end
 
-function module.save(bufnr)
+function M.save(bufnr)
   local lines = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "")
   local config = vim.fn.luaeval(lines)
   local id = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_config(id, {
-    anchor=config.anchor,
-    width=config.width,
-    height=config.height,
-    relative=config.relative,
-    row=config.row,
-    col=config.col,
-    external=config.external,
-    focusable=config.focusable,
-    style=config.style,
+    anchor = config.anchor,
+    width = config.width,
+    height = config.height,
+    relative = config.relative,
+    row = config.row,
+    col = config.col,
+    external = config.external,
+    focusable = config.focusable,
+    style = config.style,
   })
-  vim.api.nvim_buf_set_option(bufnr, "modified", false)
+  vim.bo[bufnr].modified = false
 end
 
-function module.left()
+function M.left()
   local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false]
@@ -85,7 +87,7 @@ function module.left()
   update(id, row, col, config.relative)
 end
 
-function module.down()
+function M.down()
   local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false] + 1
@@ -93,7 +95,7 @@ function module.down()
   update(id, row, col, config.relative)
 end
 
-function module.up()
+function M.up()
   local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false] - 1
@@ -101,7 +103,7 @@ function module.up()
   update(id, row, col, config.relative)
 end
 
-function module.right()
+function M.right()
   local id = vim.api.nvim_get_current_win()
   local config = vim.api.nvim_win_get_config(id)
   local row = config.row[false]
@@ -109,4 +111,4 @@ function module.right()
   update(id, row, col, config.relative)
 end
 
-return module
+return M

@@ -1,4 +1,3 @@
 test:
-	vusted ./test --shuffle -v --helper=./test/helper.lua
-
+	vusted --shuffle -v
 .PHONY: test

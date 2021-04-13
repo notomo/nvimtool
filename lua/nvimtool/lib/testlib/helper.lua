@@ -2,25 +2,30 @@ local M = {}
 
 M.root = vim.fn.getcwd()
 
-M.command = function(cmd)
-  vim.api.nvim_command(cmd)
+function M.require(name)
+  return setmetatable({}, {
+    __index = function(_, k)
+      return require(name)[k]
+    end,
+  })
 end
 
-M.before_each = function()
-  M.command("filetype on")
-  M.command("syntax enable")
+function M.before_each()
+  vim.cmd("filetype on")
+  vim.cmd("syntax enable")
 end
 
-M.after_each = function()
-  M.command("tabedit")
-  M.command("tabonly!")
-  M.command("silent! %bwipeout!")
-  M.command("filetype off")
-  M.command("syntax off")
+function M.after_each()
+  vim.cmd("tabedit")
+  vim.cmd("tabonly!")
+  vim.cmd("silent! %bwipeout!")
+  vim.cmd("filetype off")
+  vim.cmd("syntax off")
+  require("nvimtool.lib.module").cleanup()
   print(" ")
 end
 
-M.search = function(pattern)
+function M.search(pattern)
   local result = vim.fn.search(pattern)
   if result == 0 then
     local msg = string.format("%s not found", pattern)
@@ -29,12 +34,11 @@ M.search = function(pattern)
   return result
 end
 
-M.replace_line = function(new_line)
+function M.replace_line(new_line)
   vim.fn.setline(".", new_line)
 end
 
-local vassert = require("vusted.assert")
-local asserts = vassert.asserts
+local asserts = require("vusted.assert").asserts
 
 asserts.create("window_count"):register_eq(function()
   return vim.fn.tabpagewinnr(vim.fn.tabpagenr(), "$")
@@ -52,4 +56,4 @@ asserts.create("window_col"):register_eq(function()
   return vim.api.nvim_win_get_config(0).col[false]
 end)
 
-package.loaded["test.helper"] = M
+return M
