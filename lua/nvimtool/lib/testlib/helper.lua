@@ -1,14 +1,7 @@
-local M = {}
+local plugin_name = vim.split((...):gsub("%.", "/"), "/", true)[1]
+local M = require("vusted.helper")
 
-M.root = vim.fn.getcwd()
-
-function M.require(name)
-  return setmetatable({}, {
-    __index = function(_, k)
-      return require(name)[k]
-    end,
-  })
-end
+M.root = M.find_plugin_root(plugin_name)
 
 function M.before_each()
   vim.cmd("filetype on")
@@ -21,7 +14,7 @@ function M.after_each()
   vim.cmd("silent! %bwipeout!")
   vim.cmd("filetype off")
   vim.cmd("syntax off")
-  require("nvimtool.lib.module").cleanup()
+  M.cleanup_loaded_modules(plugin_name)
   print(" ")
 end
 
