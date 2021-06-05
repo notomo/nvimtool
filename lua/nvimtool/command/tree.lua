@@ -119,15 +119,16 @@ function M.child()
   open_window(sexpr)
 end
 
+local tree_lines = function(target_bufnr)
+  local tree = get_tree(target_bufnr)
+  local node = tree:root()
+  return vim.split(pp(node:sexpr()), "\n", false)
+end
+
 function M.query()
   vim.cmd("only")
 
-  local tree = get_tree(0)
-  local node = tree:root()
-  local lines = vim.split(pp(node:sexpr()), "\n", false)
-
   local target_bufnr = vim.api.nvim_get_current_buf()
-  local buf_name = vim.api.nvim_buf_get_name(target_bufnr)
 
   vim.cmd("vsplit")
   vim.cmd("wincmd w")
@@ -136,31 +137,47 @@ function M.query()
   vim.cmd("buffer " .. tree_bufnr)
   vim.bo[tree_bufnr].filetype = TREE_FILE_TYPE
   vim.bo[tree_bufnr].bufhidden = "wipe"
-  vim.api.nvim_buf_set_lines(tree_bufnr, 0, -1, false, lines)
+  vim.api.nvim_buf_set_lines(tree_bufnr, 0, -1, false, tree_lines(target_bufnr))
+  vim.bo[tree_bufnr].modifiable = false
 
   vim.cmd("split")
   vim.cmd("wincmd w")
 
   local query_bufnr = vim.api.nvim_create_buf(false, true)
   vim.cmd("buffer " .. query_bufnr)
-  local default_content = "((comment) @var (match? @var \"test\"))"
+  local default_content = [[((comment) @var (match? @var "test"))]]
   vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, {default_content})
   vim.bo[query_bufnr].modified = false
   vim.bo[query_bufnr].filetype = QUERY_FILE_TYPE
   vim.bo[query_bufnr].bufhidden = "wipe"
   vim.bo[query_bufnr].buftype = "acwrite"
-  vim.api.nvim_buf_set_name(query_bufnr, "nvimtool_query://" .. buf_name)
+  vim.api.nvim_buf_set_name(query_bufnr, "nvimtool_query://" .. vim.api.nvim_buf_get_name(target_bufnr))
 
-  local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').tree.save_query(%s, %s)", query_bufnr, target_bufnr, query_bufnr)
-  vim.cmd(write_autocmd)
+  vim.cmd(("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').tree.save_query(%s, %s)"):format(query_bufnr, target_bufnr, query_bufnr))
+  vim.cmd(("autocmd BufWritePost <buffer=%s> lua require('nvimtool').tree.save_query(%s, %s)"):format(target_bufnr, target_bufnr, query_bufnr))
+  vim.cmd(("autocmd BufWritePost <buffer=%s> lua require('nvimtool').tree.update_tree(%s, %s)"):format(target_bufnr, target_bufnr, tree_bufnr))
+  vim.cmd(("autocmd BufWipeout <buffer=%s> lua require('nvimtool').tree.reset_query(%s)"):format(query_bufnr, target_bufnr))
+end
 
-  local wipeout_autocmd = string.format("autocmd BufWipeout <buffer=%s> lua require('nvimtool').tree.reset_query(%s)", query_bufnr, target_bufnr)
-  vim.cmd(wipeout_autocmd)
+function M.update_tree(target_bufnr, tree_bufnr)
+  if not vim.api.nvim_buf_is_valid(tree_bufnr) then
+    return
+  end
+
+  local lines = tree_lines(target_bufnr)
+  vim.bo[tree_bufnr].modifiable = true
+  vim.api.nvim_buf_set_lines(tree_bufnr, 0, -1, false, lines)
+  vim.bo[tree_bufnr].modifiable = false
 end
 
 function M.save_query(target_bufnr, query_bufnr)
   target_bufnr = tonumber(target_bufnr)
   query_bufnr = tonumber(query_bufnr)
+
+  if not vim.api.nvim_buf_is_valid(query_bufnr) then
+    return
+  end
+
   vim.bo[query_bufnr].modified = false
   local query = table.concat(vim.api.nvim_buf_get_lines(query_bufnr, 0, -1, false), "")
   local tsquery = vim.treesitter.parse_query(get_lang(target_bufnr), query)

@@ -21,7 +21,7 @@ end
 function M.search(pattern)
   local result = vim.fn.search(pattern)
   if result == 0 then
-    local msg = string.format("%s not found", pattern)
+    local msg = ("%s not found"):format(pattern)
     assert(false, msg)
   end
   return result
