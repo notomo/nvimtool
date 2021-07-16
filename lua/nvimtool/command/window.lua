@@ -47,16 +47,16 @@ function M.open()
   local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').window.save(%s)", bufnr, bufnr)
   vim.cmd(write_autocmd)
 
-  vim.api.nvim_buf_set_keymap(bufnr, "n", "H", "<Cmd>lua require('nvimtool').window.left<CR>", {
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "H", "<Cmd>lua require('nvimtool').window.left()<CR>", {
     noremap = true,
   })
-  vim.api.nvim_buf_set_keymap(bufnr, "n", "J", "<Cmd>lua require('nvimtool').window.down<CR>", {
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "J", "<Cmd>lua require('nvimtool').window.down()<CR>", {
     noremap = true,
   })
-  vim.api.nvim_buf_set_keymap(bufnr, "n", "K", "<Cmd>lua require('nvimtool').window.up<CR>", {
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "K", "<Cmd>lua require('nvimtool').window.up()<CR>", {
     noremap = true,
   })
-  vim.api.nvim_buf_set_keymap(bufnr, "n", "L", "<Cmd>lua require('nvimtool').window.right<CR>", {
+  vim.api.nvim_buf_set_keymap(bufnr, "n", "L", "<Cmd>lua require('nvimtool').window.right()<CR>", {
     noremap = true,
   })
 end
