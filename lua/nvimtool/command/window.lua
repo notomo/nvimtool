@@ -33,6 +33,7 @@ function M.open()
     col = 0,
     external = false,
     style = "minimal",
+    border = "double",
   }
   local id = vim.api.nvim_open_win(bufnr, true, config)
 
@@ -75,6 +76,8 @@ function M.save(bufnr)
     external = config.external,
     focusable = config.focusable,
     style = config.style,
+    border = config.border or "none",
+    zindex = config.zindex or 50,
   })
   vim.bo[bufnr].modified = false
 end
