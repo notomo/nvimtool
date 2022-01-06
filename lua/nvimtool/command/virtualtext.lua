@@ -5,7 +5,7 @@ function M.echo()
   local line = vim.fn.line(".") - 1
   local nss = vim.api.nvim_get_namespaces()
   for _, ns in pairs(nss) do
-    local ok, results = pcall(vim.api.nvim_buf_get_extmarks, bufnr, ns, {line, 0}, {line, -1}, {
+    local ok, results = pcall(vim.api.nvim_buf_get_extmarks, bufnr, ns, { line, 0 }, { line, -1 }, {
       details = true,
     })
     if not ok then
@@ -16,7 +16,7 @@ function M.echo()
       local details = result[4]
       for _, chunk in ipairs(details.virt_text or {}) do
         local text = chunk[1]
-        vim.api.nvim_echo({{text}}, true, {})
+        vim.api.nvim_echo({ { text } }, true, {})
       end
     end
 

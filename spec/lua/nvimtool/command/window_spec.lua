@@ -2,7 +2,6 @@ local helper = require("nvimtool.lib.testlib.helper")
 local nvimtool = helper.require("nvimtool")
 
 describe("window command", function()
-
   before_each(helper.before_each)
   after_each(helper.after_each)
 
@@ -42,5 +41,4 @@ describe("window command", function()
 
     assert.window_width(width)
   end)
-
 end)

@@ -17,7 +17,7 @@ local function update(id, row, col, relative)
     return
   end
 
-  vim.api.nvim_win_set_config(id, {relative = relative, row = row, col = col})
+  vim.api.nvim_win_set_config(id, { relative = relative, row = row, col = col })
   dump(bufnr, vim.api.nvim_win_get_config(id))
   vim.bo[bufnr].modified = false
 end
@@ -45,7 +45,11 @@ function M.open()
   vim.bo[bufnr].buftype = "acwrite"
   vim.api.nvim_buf_set_name(bufnr, "nvimtool_window://" .. bufnr)
 
-  local write_autocmd = string.format("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').window.save(%s)", bufnr, bufnr)
+  local write_autocmd = string.format(
+    "autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').window.save(%s)",
+    bufnr,
+    bufnr
+  )
   vim.cmd(write_autocmd)
 
   vim.api.nvim_buf_set_keymap(bufnr, "n", "H", "<Cmd>lua require('nvimtool').window.left()<CR>", {
