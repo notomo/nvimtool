@@ -168,15 +168,19 @@ function M.query()
     )
   )
   vim.cmd(
-    ("autocmd BufWritePost <buffer=%s> lua require('nvimtool').tree.update_tree(%s, %s)"):format(
-      target_bufnr,
-      target_bufnr,
-      tree_bufnr
-    )
-  )
-  vim.cmd(
     ("autocmd BufWipeout <buffer=%s> lua require('nvimtool').tree.reset_query(%s)"):format(query_bufnr, target_bufnr)
   )
+
+  vim.api.nvim_buf_attach(target_bufnr, false, {
+    on_lines = function()
+      if not (vim.api.nvim_buf_is_valid(target_bufnr) and vim.api.nvim_buf_is_valid(tree_bufnr)) then
+        return true
+      end
+      vim.schedule(function()
+        require("nvimtool").tree.update_tree(target_bufnr, tree_bufnr)
+      end)
+    end,
+  })
 end
 
 function M.update_tree(target_bufnr, tree_bufnr)
