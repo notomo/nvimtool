@@ -77,7 +77,7 @@ local function open_window(sexpr)
   vim.bo[bufnr].modifiable = false
 end
 
-local parser_names = { vim = "vimscript" }
+local parser_names = { scheme = "query" }
 local function get_lang(bufnr)
   local filetype = vim.bo[bufnr].filetype
   local name = parser_names[filetype]
