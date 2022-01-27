@@ -2,6 +2,7 @@ local M = {}
 local ns = vim.api.nvim_create_namespace("nvimtool-tree-query")
 local tree_ns = vim.api.nvim_create_namespace("nvimtool-tree-query-tree")
 local target_cursor_ns = vim.api.nvim_create_namespace("nvimtool-tree-query-target")
+local tree_cursor_ns = vim.api.nvim_create_namespace("nvimtool-tree-query-tree-cursor")
 
 local function count_pattern(haystack, needle)
   local start = 0
@@ -101,19 +102,26 @@ function M.root()
   open_window(node:sexpr())
 end
 
+local child = function(root, row, column)
+  local count = root:child_count()
+  for i = 0, count - 1 do
+    local sr, sc, er, ec = unpack({ root:child(i):range() })
+    if sr <= row and row <= er and sc <= column and column <= ec then
+      return root:child(i)
+    end
+  end
+end
+
 function M.child()
   local tree = get_tree(0)
   local root = tree:root()
   local row, column = unpack(vim.api.nvim_win_get_cursor(0))
-  local count = root:child_count()
-  local sexpr = ""
-  for i = 0, count - 1 do
-    local sr, sc, er, ec = unpack({ root:child(i):range() })
-    if sr <= row and row <= er and sc <= column and column <= ec then
-      sexpr = root:child(i):sexpr()
-      break
-    end
+  local c = child(root, row, column)
+  if not c then
+    return
   end
+
+  local sexpr = c:sexpr()
   if sexpr == "" then
     return
   end
@@ -134,6 +142,7 @@ end
 local tree_lines = function(target_bufnr)
   local tree = get_tree(target_bufnr)
   local node = tree:root()
+  M._root = node
   local all = all_nodes(node, { node })
   local ranges = {}
   for _, n in ipairs(all) do
@@ -201,6 +210,19 @@ function M.query()
       target_bufnr
     )
   )
+  vim.cmd(
+    ("autocmd CursorMoved <buffer=%s> lua require('nvimtool').tree.highlight_tree(%s, %s)"):format(
+      target_bufnr,
+      target_bufnr,
+      tree_bufnr
+    )
+  )
+  vim.cmd(
+    ("autocmd WinEnter <buffer=%s> lua require('nvimtool').tree.clear_highlight_tree(%s)"):format(
+      tree_bufnr,
+      tree_bufnr
+    )
+  )
   vim.cmd([[augroup END]])
 
   vim.api.nvim_buf_attach(target_bufnr, false, {
@@ -242,6 +264,54 @@ function M.clear_highlight_target(target_bufnr)
   vim.api.nvim_buf_clear_namespace(target_bufnr, target_cursor_ns, 0, -1)
 end
 
+function M.clear_highlight_tree(tree_bufnr)
+  vim.api.nvim_buf_clear_namespace(tree_bufnr, tree_cursor_ns, 0, -1)
+end
+
+function M.highlight_tree(target_bufnr, tree_bufnr)
+  if not vim.api.nvim_buf_is_valid(tree_bufnr) then
+    return
+  end
+
+  local clear = function()
+    vim.api.nvim_buf_clear_namespace(tree_bufnr, tree_cursor_ns, 0, -1)
+  end
+
+  local window_id = vim.fn.bufwinid(target_bufnr)
+  local row, column = unpack(vim.api.nvim_win_get_cursor(window_id))
+  local marks = M._row_marks[row - 1]
+  if not marks then
+    return clear()
+  end
+
+  local c = M._root:descendant_for_range(row - 1, column, row - 1, column + 1)
+  if not c then
+    return clear()
+  end
+  local sr, sc, er, ec = c:range()
+  local id
+  for _, m in ipairs(marks) do
+    if m.row == sr and m.column == sc and m.end_row == er and m.end_column == ec then
+      id = m.id
+      break
+    end
+  end
+  if not id then
+    return clear()
+  end
+
+  local mark = vim.api.nvim_buf_get_extmark_by_id(tree_bufnr, tree_ns, id, {})
+  clear()
+  vim.api.nvim_buf_set_extmark(tree_bufnr, tree_cursor_ns, mark[1] - 1, 0, {
+    end_row = mark[1],
+    hl_eol = true,
+    hl_group = "Visual",
+  })
+
+  local tree_window_id = vim.fn.bufwinid(tree_bufnr)
+  vim.api.nvim_win_set_cursor(tree_window_id, { mark[1], 0 })
+end
+
 function M.update_tree(target_bufnr, tree_bufnr)
   if not vim.api.nvim_buf_is_valid(tree_bufnr) then
     return
@@ -252,13 +322,19 @@ function M.update_tree(target_bufnr, tree_bufnr)
   vim.api.nvim_buf_set_lines(tree_bufnr, 0, -1, false, lines)
   vim.bo[tree_bufnr].modifiable = false
 
+  local row_marks = {}
   vim.api.nvim_buf_clear_namespace(tree_bufnr, tree_ns, 0, -1)
   for i, range in ipairs(ranges) do
     local str = ("[%d, %d] - [%d, %d]"):format(unpack(range))
-    vim.api.nvim_buf_set_extmark(tree_bufnr, tree_ns, i - 1, 0, {
+    local id = vim.api.nvim_buf_set_extmark(tree_bufnr, tree_ns, i - 1, 0, {
       virt_text = { { str, "Comment" } },
     })
+    local row = range[1]
+    local marks = row_marks[row] or {}
+    table.insert(marks, { id = id, row = range[1], column = range[2], end_row = range[3], end_column = range[4] })
+    row_marks[row] = marks
   end
+  M._row_marks = row_marks
 end
 
 function M.save_query(target_bufnr, query_bufnr)
