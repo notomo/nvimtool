@@ -1,24 +1,17 @@
 local plugin_name = vim.split((...):gsub("%.", "/"), "/", true)[1]
-local M = require("vusted.helper")
+local helper = require("vusted.helper")
 
-M.root = M.find_plugin_root(plugin_name)
+helper.root = helper.find_plugin_root(plugin_name)
 
-function M.before_each()
-  vim.cmd("filetype on")
-  vim.cmd("syntax enable")
-end
+function helper.before_each() end
 
-function M.after_each()
-  vim.cmd("tabedit")
-  vim.cmd("tabonly!")
-  vim.cmd("silent! %bwipeout!")
-  vim.cmd("filetype off")
-  vim.cmd("syntax off")
-  M.cleanup_loaded_modules(plugin_name)
+function helper.after_each()
+  helper.cleanup()
+  helper.cleanup_loaded_modules(plugin_name)
   print(" ")
 end
 
-function M.search(pattern)
+function helper.search(pattern)
   local result = vim.fn.search(pattern)
   if result == 0 then
     local msg = ("%s not found"):format(pattern)
@@ -27,7 +20,7 @@ function M.search(pattern)
   return result
 end
 
-function M.replace_line(new_line)
+function helper.replace_line(new_line)
   vim.fn.setline(".", new_line)
 end
 
@@ -49,4 +42,4 @@ asserts.create("window_col"):register_eq(function()
   return vim.api.nvim_win_get_config(0).col[false]
 end)
 
-return M
+return helper
