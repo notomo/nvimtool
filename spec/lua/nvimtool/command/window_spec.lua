@@ -37,7 +37,7 @@ describe("window command", function()
     local width = 40
     helper.search("width")
     helper.replace_line("width = " .. width .. ",")
-    vim.cmd("write")
+    vim.cmd.write()
 
     assert.window_width(width)
   end)

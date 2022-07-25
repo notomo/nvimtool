@@ -45,12 +45,12 @@ function M.open()
   vim.bo[bufnr].buftype = "acwrite"
   vim.api.nvim_buf_set_name(bufnr, "nvimtool_window://" .. bufnr)
 
-  local write_autocmd = string.format(
-    "autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').window.save(%s)",
-    bufnr,
-    bufnr
-  )
-  vim.cmd(write_autocmd)
+  vim.api.nvim_create_autocmd({ "BufWriteCmd" }, {
+    buffer = bufnr,
+    callback = function()
+      require("nvimtool").window.save(bufnr)
+    end,
+  })
 
   vim.api.nvim_buf_set_keymap(bufnr, "n", "H", "<Cmd>lua require('nvimtool').window.left()<CR>", {
     noremap = true,

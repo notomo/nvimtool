@@ -142,26 +142,28 @@ local tree_lines = function(target_bufnr)
   return vim.split(pp(node:sexpr()), "\n", false), ranges
 end
 
+local group_name = "nvimtool_tree"
+
 function M.query()
-  vim.cmd("only")
+  vim.cmd.only()
 
   local target_bufnr = vim.api.nvim_get_current_buf()
 
-  vim.cmd("vsplit")
-  vim.cmd("wincmd w")
+  vim.cmd.vsplit()
+  vim.cmd.wincmd("w")
 
   local tree_bufnr = vim.api.nvim_create_buf(false, true)
-  vim.cmd("buffer " .. tree_bufnr)
+  vim.cmd.buffer({ count = tree_bufnr })
   vim.bo[tree_bufnr].filetype = TREE_FILE_TYPE
   vim.bo[tree_bufnr].bufhidden = "wipe"
   vim.wo.list = false
   M.update_tree(target_bufnr, tree_bufnr)
 
-  vim.cmd("split")
-  vim.cmd("wincmd w")
+  vim.cmd.split()
+  vim.cmd.wincmd("w")
 
   local query_bufnr = vim.api.nvim_create_buf(false, true)
-  vim.cmd("buffer " .. query_bufnr)
+  vim.cmd.buffer({ count = query_bufnr })
   local default_content = [[((comment) @var (match? @var "test"))]]
   vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, { default_content })
   vim.bo[query_bufnr].modified = false
@@ -170,38 +172,42 @@ function M.query()
   vim.bo[query_bufnr].buftype = "acwrite"
   vim.api.nvim_buf_set_name(query_bufnr, "nvimtool_query://" .. vim.api.nvim_buf_get_name(target_bufnr))
 
-  vim.cmd([[augroup nvimtool_tree]])
-  vim.cmd(
-    ("autocmd BufWriteCmd <buffer=%s> lua require('nvimtool').tree.save_query(%s, %s)"):format(
-      query_bufnr,
-      target_bufnr,
-      query_bufnr
-    )
-  )
-  vim.cmd(
-    ("autocmd BufWritePost <buffer=%s> lua require('nvimtool').tree.save_query(%s, %s)"):format(
-      target_bufnr,
-      target_bufnr,
-      query_bufnr
-    )
-  )
-  vim.cmd(
-    ("autocmd BufWipeout <buffer=%s> lua require('nvimtool').tree.reset_query(%s)"):format(query_bufnr, target_bufnr)
-  )
-  vim.cmd(
-    ("autocmd CursorMoved <buffer=%s> lua require('nvimtool').tree.highlight_target(%s, %s)"):format(
-      tree_bufnr,
-      target_bufnr,
-      tree_bufnr
-    )
-  )
-  vim.cmd(
-    ("autocmd WinEnter <buffer=%s> lua require('nvimtool').tree.clear_highlight_target(%s)"):format(
-      target_bufnr,
-      target_bufnr
-    )
-  )
-  vim.cmd([[augroup END]])
+  local group = vim.api.nvim_create_augroup(group_name, {})
+  vim.api.nvim_create_autocmd({ "BufWriteCmd" }, {
+    group = group,
+    buffer = query_bufnr,
+    callback = function()
+      require("nvimtool").tree.save_query(target_bufnr, query_bufnr)
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+    group = group,
+    buffer = target_bufnr,
+    callback = function()
+      require("nvimtool").tree.save_query(target_bufnr, query_bufnr)
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "BufWipeout" }, {
+    group = group,
+    buffer = query_bufnr,
+    callback = function()
+      require("nvimtool").tree.reset_query(target_bufnr)
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    group = group,
+    buffer = tree_bufnr,
+    callback = function()
+      require("nvimtool").tree.highlight_target(target_bufnr, tree_bufnr)
+    end,
+  })
+  vim.api.nvim_create_autocmd({ "WinEnter" }, {
+    group = group,
+    buffer = target_bufnr,
+    callback = function()
+      require("nvimtool").tree.clear_highlight_target(target_bufnr)
+    end,
+  })
 
   vim.api.nvim_buf_attach(target_bufnr, false, {
     on_lines = function()
@@ -217,7 +223,7 @@ end
 
 function M.highlight_target(target_bufnr, tree_bufnr)
   if not (vim.api.nvim_buf_is_valid(target_bufnr) and vim.api.nvim_buf_is_valid(tree_bufnr)) then
-    vim.cmd([[autocmd! nvimtool_tree WinEnter]])
+    vim.api.nvim_clear_autocmds({ event = "WinEnter", group = group_name })
     return nil
   end
   local window_id = vim.fn.bufwinid(tree_bufnr)
@@ -294,6 +300,6 @@ function M.reset_query(target_bufnr)
   vim.api.nvim_buf_clear_namespace(target_bufnr, ns, 0, -1)
 end
 
-vim.cmd("highlight default link NvimToolTreeQueryMatched Todo")
+vim.api.nvim_set_hl(0, "NvimToolTreeQueryMatched", { link = "Todo" })
 
 return M
