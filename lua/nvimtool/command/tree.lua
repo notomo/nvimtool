@@ -153,7 +153,7 @@ function M.query()
   vim.cmd.wincmd("w")
 
   local tree_bufnr = vim.api.nvim_create_buf(false, true)
-  vim.cmd.buffer({ count = tree_bufnr })
+  vim.cmd.buffer(tree_bufnr)
   vim.bo[tree_bufnr].filetype = TREE_FILE_TYPE
   vim.bo[tree_bufnr].bufhidden = "wipe"
   vim.wo.list = false
@@ -163,7 +163,7 @@ function M.query()
   vim.cmd.wincmd("w")
 
   local query_bufnr = vim.api.nvim_create_buf(false, true)
-  vim.cmd.buffer({ count = query_bufnr })
+  vim.cmd.buffer(query_bufnr)
   local default_content = [[((comment) @var (match? @var "test"))]]
   vim.api.nvim_buf_set_lines(query_bufnr, 0, -1, false, { default_content })
   vim.bo[query_bufnr].modified = false
