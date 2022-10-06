@@ -1,4 +1,4 @@
-local helper = require("nvimtool.lib.testlib.helper")
+local helper = require("nvimtool.test.helper")
 local nvimtool = helper.require("nvimtool")
 
 describe("window command", function()
